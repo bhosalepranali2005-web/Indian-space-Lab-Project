@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CanSat Ground Control Software (GCS) - India Space Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Leaflet.js CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+    <header class="gcs-header">
+        <div class="header-title">
+            <i class="fa-solid fa-satellite"></i>
+            <h1>CANSAT GROUND CONTROL SOFTWARE</h1>
+            <span class="sub-title">Mission Operations & Telemetry Dashboard</span>
+        </div>
+        <div class="top-controls">
+            <button id="btn-start" class="btn btn-success"><i class="fa-solid fa-play"></i> Start Telemetry</button>
+            <button id="btn-stop" class="btn btn-danger" disabled><i class="fa-solid fa-square"></i> Stop Telemetry</button>
+            <button id="btn-sync" class="btn btn-info"><i class="fa-solid fa-clock"></i> Sync PC Time</button>
+            <button id="btn-reset" class="btn btn-warning"><i class="fa-solid fa-rotate-left"></i> Reset Packet</button>
+            <button id="btn-export-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+            <button id="btn-export-graph" class="btn btn-secondary"><i class="fa-solid fa-file-image"></i> Export Graph</button>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Panel 1: Telemetry & Mission Controls -->
+        <section class="panel panel-controls">
+            <h2><i class="fa-solid fa-gamepad"></i> Mission Control Panel</h2>
+            <div class="control-actions">
+                <button id="cmd-separation" class="btn btn-cmd"><i class="fa-solid fa-arrows-split-up-and-left"></i> Manual Separation</button>
+                <button id="cmd-parachute" class="btn btn-cmd btn-cmd-danger"><i class="fa-solid fa-parachute-box"></i> Emergency Parachute</button>
+                <button id="cmd-redundant" class="btn btn-cmd"><i class="fa-solid fa-bolt"></i> Redundant Activation</button>
+            </div>
+            <div class="command-status" id="cmd-status">System Standing By: Telemetry Idle</div>
+            
+            <hr class="divider">
+
+            <h2><i class="fa-solid fa-triangle-exclamation"></i> 4-Digit Error Code System</h2>
+            <div class="error-code-container">
+                <div class="error-display">
+                    <span id="err-d1" class="err-digit">0</span>
+                    <span id="err-d2" class="err-digit">0</span>
+                    <span id="err-d3" class="err-digit">0</span>
+                    <span id="err-d4" class="err-digit">0</span>
+                </div>
+                <div class="error-legend">
+                    <div><strong>D1:</strong> Descent Rate (<span id="txt-d1">Normal</span>)</div>
+                    <div><strong>D2:</strong> GPS Data (<span id="txt-d2">Available</span>)</div>
+                    <div><strong>D3:</strong> Payload Sep. (<span id="txt-d3">OK</span>)</div>
+                    <div><strong>D4:</strong> Emergency Chute (<span id="txt-d4">Inactive</span>)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel 2: Live Telemetry Display -->
+        <section class="panel panel-telemetry">
+            <h2><i class="fa-solid fa-list-check"></i> Live Telemetry Readouts</h2>
+            <div class="telemetry-tables">
+                <div class="telem-group">
+                    <h3>Container Telemetry</h3>
+                    <div class="telem-row"><span>Packet Count:</span> <span id="val-packet" class="telem-val">0</span></div>
+                    <div class="telem-row"><span>Mission Time:</span> <span id="val-time" class="telem-val">00:00:00</span></div>
+                    <div class="telem-row"><span>Container Alt:</span> <span id="val-c-alt" class="telem-val">0.0 m</span></div>
+                    <div class="telem-row"><span>Battery Volts:</span> <span id="val-batt" class="telem-val">0.00 V</span></div>
+                    <div class="telem-row"><span>State:</span> <span id="val-state" class="telem-val badge">LAUNCH_WAIT</span></div>
+                </div>
+                <div class="telem-group">
+                    <h3>Payload Telemetry</h3>
+                    <div class="telem-row"><span>Payload Alt:</span> <span id="val-p-alt" class="telem-val">0.0 m</span></div>
+                    <div class="telem-row"><span>Descent Rate:</span> <span id="val-descent" class="telem-val">0.0 m/s</span></div>
+                    <div class="telem-row"><span>Temperature:</span> <span id="val-temp" class="telem-val">0.0 °C</span></div>
+                    <div class="telem-row"><span>Pressure:</span> <span id="val-press" class="telem-val">0.0 hPa</span></div>
+                    <div class="telem-row"><span>GPS Sats:</span> <span id="val-sats" class="telem-val">0</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel 3: Real-Time Graphs -->
+        <section class="panel panel-graphs">
+            <h2><i class="fa-solid fa-chart-line"></i> Real-Time Telemetry Graphs</h2>
+            <div class="graphs-grid">
+                <div class="chart-box"><canvas id="chart-altitude"></canvas></div>
+                <div class="chart-box"><canvas id="chart-pressure"></canvas></div>
+                <div class="chart-box"><canvas id="chart-temperature"></canvas></div>
+                <div class="chart-box"><canvas id="chart-descent"></canvas></div>
+                <div class="chart-box"><canvas id="chart-voltage"></canvas></div>
+            </div>
+        </section>
+
+        <!-- Panel 4: Tracking Map -->
+        <section class="panel panel-map">
+            <h2><i class="fa-solid fa-map-location-dot"></i> Live GPS Payload Tracking Map</h2>
+            <div id="map"></div>
+            <div class="map-coordinates">
+                Lat: <span id="val-lat">16.6913</span>° N | 
+                Lng: <span id="val-lng">74.5822</span>° E
+            </div>
+        </section>
+
+        <!-- Panel 5: 3D Orientation -->
+        <section class="panel panel-orientation">
+            <h2><i class="fa-solid fa-compass"></i> 3D Orientation & Horizon</h2>
+            <div id="orientation-canvas"></div>
+            <div class="orientation-readouts">
+                <div>Roll: <span id="val-roll">0.0</span>°</div>
+                <div>Pitch: <span id="val-pitch">0.0</span>°</div>
+                <div>Yaw: <span id="val-yaw">0.0</span>°</div>
+            </div>
+        </section>
+
+        <!-- Panel 6: Live Video Stream -->
+        <section class="panel panel-video">
+            <h2><i class="fa-solid fa-video"></i> Live Camera Stream</h2>
+            <div class="video-container">
+                <video id="webcam-feed" autoplay playsinline muted></video>
+            </div>
+            <div class="video-controls">
+                <button id="btn-cam-start" class="btn btn-sm btn-info">Start Camera</button>
+                <button id="btn-cam-stop" class="btn btn-sm btn-danger">Stop Camera</button>
+                <span id="cam-status" class="status-indicator">Camera Offline</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Third-Party Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerospace Simulation Suite - Rocket Fin FEM & CFD | India Space Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-brand">
+            <i class="fa-solid fa-rocket"></i>
+            <div>
+                <h1>AEROSPACE SIMULATION SUITE</h1>
+                <span class="sub-title">Supersonic Rocket Fin FEA Stress & CFD Aerodynamic Solver</span>
+            </div>
+        </div>
+        <div class="top-nav">
+            <button id="btn-fem-mode" class="btn btn-tab active"><i class="fa-solid fa-cube"></i> PART B: FEM Analysis</button>
+            <button id="btn-cfd-mode" class="btn btn-tab"><i class="fa-solid fa-wind"></i> PART C: CFD Analysis</button>
+            <button id="btn-opt-mode" class="btn btn-tab btn-accent"><i class="fa-solid fa-wand-magic-sparkles"></i> BONUS: Optimization</button>
+            <button id="btn-export-report" class="btn btn-success"><i class="fa-solid fa-file-pdf"></i> Export Simulation Summary</button>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Control & Configuration Panel -->
+        <section class="panel panel-config">
+            <h2><i class="fa-solid fa-sliders"></i> Simulation Setup Parameters</h2>
+            
+            <div class="config-group">
+                <h3>Material Properties (TASK 1)</h3>
+                <label>Material: 
+                    <select id="sel-material">
+                        <option value="Al7075">Aluminum 7075-T6 (Aerospace Grade)</option>
+                        <option value="Ti6Al4V">Titanium Grade 5 (Ti-6Al-4V)</option>
+                        <option value="CFRP">Carbon Fiber Composite</option>
+                    </select>
+                </label>
+                <div class="prop-readout">
+                    <div>Yield Strength (<span class="math-symbol">&sigma;<sub>y</sub></span>): <span id="val-yield">503</span> MPa</div>
+                    <div>Young's Modulus (E): <span id="val-modulus">71.7</span> GPa</div>
+                    <div>Density (<span class="math-symbol">&rho;</span>): <span id="val-density">2810</span> kg/m³</div>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="config-group">
+                <h3>Boundary Conditions (TASK 2)</h3>
+                <label>Aero Load Pressure: <input type="number" id="inp-load" value="15.0" step="1.0"> kPa</label>
+                <label>Inlet Flow Velocity: <input type="number" id="inp-velocity" value="340" step="10"> m/s (Mach 1.0)</label>
+                <label>Fixity: <span class="badge">Root Joint Locked (Ux=Uy=Uz=0)</span></label>
+            </div>
+
+            <hr class="divider">
+
+            <div class="config-group">
+                <h3>Mesh Density Refinement (TASK 3)</h3>
+                <div class="mesh-buttons">
+                    <button class="btn btn-mesh" data-mesh="coarse">Coarse (12mm)</button>
+                    <button class="btn btn-mesh active" data-mesh="medium">Medium (5mm)</button>
+                    <button class="btn btn-mesh" data-mesh="fine">Fine (2mm)</button>
+                </div>
+                <div class="mesh-info">Element Count: <span id="val-elements">8,650</span> nodes</div>
+            </div>
+
+            <button id="btn-run-sim" class="btn btn-run"><i class="fa-solid fa-play"></i> Solve FEA / CFD Pipeline</button>
+        </section>
+
+        <!-- Main Visualization Canvas -->
+        <section class="panel panel-visualizer">
+            <div class="vis-header">
+                <h2 id="vis-title"><i class="fa-solid fa-chart-area"></i> FEA Von Mises Stress Contour Map</h2>
+                <div class="legend-scale">
+                    <span class="leg-low">Min (15 MPa)</span>
+                    <div class="gradient-bar"></div>
+                    <span class="leg-high" id="lbl-max-scale">Max (194.6 MPa)</span>
+                </div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="sim-canvas"></canvas>
+            </div>
+            <div class="sim-status" id="sim-status-box">Status: Solved — Mesh Independence Confirmed (3.4% Delta)</div>
+        </section>
+
+        <!-- Numerical Metrics & Results Readout -->
+        <section class="panel panel-results">
+            <h2><i class="fa-solid fa-calculator"></i> Solver Output Metrics</h2>
+            
+            <div class="metrics-card">
+                <div class="metric-box">
+                    <span class="m-label">Peak Von Mises Stress</span>
+                    <span class="m-val" id="res-stress">194.6 <small>MPa</small></span>
+                </div>
+                <div class="metric-box">
+                    <span class="m-label">Max Structural Deflection</span>
+                    <span class="m-val" id="res-deflect">3.92 <small>mm</small></span>
+                </div>
+                <div class="metric-box">
+                    <span class="m-label">Safety Factor (FoS)</span>
+                    <span class="m-val status-safe" id="res-fos">2.58</span>
+                </div>
+                <div class="metric-box">
+                    <span class="m-label">Aerodynamic Drag Force</span>
+                    <span class="m-val" id="res-drag">48.2 <small>N</small></span>
+                </div>
+                <div class="metric-box">
+                    <span class="m-label">Drag Coefficient (C<sub>d</sub>)</span>
+                    <span class="m-val" id="res-cd">0.042</span>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <h2><i class="fa-solid fa-table"></i> Mesh Convergence Matrix</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Mesh</th>
+                        <th>Size</th>
+                        <th>Nodes</th>
+                        <th>Stress</th>
+                        <th>Deflect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Coarse</td><td>12mm</td><td>1,240</td><td>142.5 MPa</td><td>3.12 mm</td></tr>
+                    <tr class="row-highlight"><td>Medium</td><td>5mm</td><td>8,650</td><td>188.2 MPa</td><td>3.85 mm</td></tr>
+                    <tr><td>Fine</td><td>2mm</td><td>48,200</td><td>194.6 MPa</td><td>3.92 mm</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Performance Benchmark / Optimization Section -->
+        <section class="panel panel-charts">
+            <h2><i class="fa-solid fa-chart-column"></i> Optimization Delta Benchmark (BONUS TASK)</h2>
+            <div class="chart-container">
+                <canvas id="chart-opt"></canvas>
+            </div>
+            <div class="opt-summary">
+                <div><i class="fa-solid fa-shield-halved"></i> Stress Concentration: <strong>-27.4%</strong></div>
+                <div><i class="fa-solid fa-feather-pointed"></i> Aerodynamic Drag: <strong>-26.2%</strong></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- External Charting Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
